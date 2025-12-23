@@ -1,0 +1,19 @@
+# Core framework (compatible with Python 3.13)
+crewai==0.11.2
+
+# Utilities
+python-dotenv>=1.0.0
+
+# Output formatting
+rich>=13.0.0
+
+# Optional
+requests>=2.31.0
+
+# Web UI
+gradio>=4.0.0
+
+# REST API (for Lovable integration)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0

@@ -1,0 +1,9 @@
+# Place your Lovable.dev exported code here
+#
+# Expected structure:
+# frontend/
+# ├── src/
+# ├── public/
+# ├── package.json
+# ├── tsconfig.json
+# └── vite.config.ts

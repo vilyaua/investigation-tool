@@ -1,0 +1,440 @@
+Universal Multi-Agent Question Processing System - Architecture Design
+
+  High-Level Architecture
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                              USER INPUT                                      │
+  │                    "Complex question in any field"                          │
+  └─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                        ORCHESTRATION LAYER                                   │
+  │  ┌─────────────────────────────────────────────────────────────────────┐   │
+  │  │                      META-ORCHESTRATOR                               │   │
+  │  │  • Analyzes question complexity & domain                            │   │
+  │  │  • Decomposes into sub-tasks                                        │   │
+  │  │  • Selects workflow pattern (sequential/parallel/hybrid)            │   │
+  │  │  • Assigns agents to tasks                                          │   │
+  │  │  • Monitors progress & adapts strategy                              │   │
+  │  └─────────────────────────────────────────────────────────────────────┘   │
+  └─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                      ┌───────────────┼───────────────┐
+                      ▼               ▼               ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                          AGENT POOL                                          │
+  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │
+  │  │  Researcher  │ │   Analyst    │ │   Critic     │ │  Synthesizer │       │
+  │  │              │ │              │ │              │ │              │       │
+  │  │ Web search,  │ │ Data/code    │ │ Validates,   │ │ Combines     │       │
+  │  │ literature   │ │ analysis     │ │ finds gaps   │ │ findings     │       │
+  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │
+  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │
+  │  │   Planner    │ │Domain Expert │ │   Coder      │ │    Writer    │       │
+  │  │              │ │  (Dynamic)   │ │              │ │              │       │
+  │  │ Breaks down  │ │ Specialized  │ │ Implements,  │ │ Documents,   │       │
+  │  │ problems     │ │ knowledge    │ │ debugs       │ │ explains     │       │
+  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │
+  └─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                            TOOL LAYER                                        │
+  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐   │
+  │  │Web      │ │Code     │ │Document │ │Database │ │API      │ │Custom   │   │
+  │  │Search   │ │Search   │ │Parser   │ │Query    │ │Caller   │ │Tools    │   │
+  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘   │
+  └─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                         MEMORY & STATE                                       │
+  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐             │
+  │  │ Working Memory  │  │ Shared Context  │  │  Result Store   │             │
+  │  │ (Current task)  │  │ (Cross-agent)   │  │  (Accumulated)  │             │
+  │  └─────────────────┘  └─────────────────┘  └─────────────────┘             │
+  └─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                           FINAL OUTPUT                                       │
+  │              Comprehensive answer with sources & confidence                  │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  Core Components
+
+  1. Meta-Orchestrator (The Brain)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                     META-ORCHESTRATOR                            │
+  │                                                                  │
+  │  INPUT: Raw user question                                        │
+  │                                                                  │
+  │  STEP 1: Question Analysis                                       │
+  │  ├─ Complexity score (1-10)                                     │
+  │  ├─ Domain classification (tech, science, business, etc.)       │
+  │  ├─ Question type (factual, analytical, creative, multi-part)   │
+  │  └─ Required capabilities (research, code, math, synthesis)     │
+  │                                                                  │
+  │  STEP 2: Task Decomposition                                      │
+  │  ├─ Break into atomic sub-questions                             │
+  │  ├─ Identify dependencies between sub-tasks                     │
+  │  └─ Estimate effort per sub-task                                │
+  │                                                                  │
+  │  STEP 3: Workflow Selection                                      │
+  │  ├─ Pattern: Sequential | Parallel | Hybrid | Iterative         │
+  │  └─ Agent assignment per sub-task                               │
+  │                                                                  │
+  │  STEP 4: Execution Monitoring                                    │
+  │  ├─ Track progress                                              │
+  │  ├─ Detect failures/gaps                                        │
+  │  └─ Re-route or spawn additional agents if needed               │
+  │                                                                  │
+  │  OUTPUT: Execution plan + coordination signals                   │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Orchestrator Decision Matrix:
+
+  | Question Characteristic | Workflow Pattern | Agents Selected                    |
+  |-------------------------|------------------|------------------------------------|
+  | Single domain, factual  | Sequential       | Researcher → Writer                |
+  | Multi-domain            | Parallel         | Multiple Researchers → Synthesizer |
+  | Requires validation     | Iterative        | Agent → Critic → Agent (loop)      |
+  | Technical + explanation | Hybrid           | Coder ∥ Researcher → Synthesizer   |
+  | Ambiguous/complex       | Decompose first  | Planner → Dynamic selection        |
+
+  ---
+  2. Agent Pool Specifications
+
+  | Agent         | Role                        | Model Type       | Tools                     | When Used                    |
+  |---------------|-----------------------------|------------------|---------------------------|------------------------------|
+  | Planner       | Decomposes complex problems | Reasoning (slow) | None                      | Complex multi-part questions |
+  | Researcher    | Gathers information         | Fast             | Web search, doc retrieval | Any question needing facts   |
+  | Analyst       | Deep analysis of data/code  | Reasoning        | Code search, data tools   | Technical questions          |
+  | Domain Expert | Specialized knowledge       | Reasoning        | Domain-specific APIs      | When domain expertise needed |
+  | Critic        | Validates, finds gaps       | Reasoning        | None                      | Quality assurance            |
+  | Synthesizer   | Combines multiple inputs    | Reasoning        | None                      | Merging parallel results     |
+  | Coder         | Writes/analyzes code        | Fast             | Code execution, GitHub    | Programming questions        |
+  | Writer        | Produces final output       | Fast             | None                      | Always (final stage)         |
+
+  ---
+  3. Workflow Patterns
+
+  Pattern A: Sequential Pipeline
+  Question → [Agent1] → [Agent2] → [Agent3] → Answer
+                  ↓          ↓          ↓
+              Context accumulates forward
+  Use when: Linear dependency, each step builds on previous
+
+  Pattern B: Parallel Fan-Out/Fan-In
+                ┌→ [Agent1] ─┐
+  Question ─────┼→ [Agent2] ─┼→ [Synthesizer] → Answer
+                └→ [Agent3] ─┘
+  Use when: Independent sub-questions, time-sensitive
+
+  Pattern C: Iterative Refinement
+  Question → [Agent] → [Critic] → Pass? ─Yes→ Answer
+                           │
+                           No
+                           ↓
+                      [Agent] (retry with feedback)
+  Use when: High accuracy required, complex reasoning
+
+  Pattern D: Hierarchical Decomposition
+  Question → [Planner] → SubQ1 → [Pipeline A] ─┐
+                       → SubQ2 → [Pipeline B] ─┼→ [Synthesizer] → Answer
+                       → SubQ3 → [Pipeline C] ─┘
+  Use when: Very complex questions that need breaking down
+
+  Pattern E: Adaptive/Dynamic
+  Question → [Orchestrator] → Decides at runtime based on:
+                             • Intermediate results
+                             • Confidence scores
+                             • Time constraints
+                             • Cost limits
+  Use when: Unknown complexity, production systems
+
+  ---
+  4. Data Flow Specification
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                         DATA STRUCTURES                                      │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  TaskContext {
+      task_id: string
+      original_question: string
+      sub_questions: SubQuestion[]
+      current_phase: string
+      accumulated_context: Map<agent_id, AgentOutput>
+      workflow_pattern: WorkflowPattern
+      metadata: {
+          complexity_score: number
+          domains: string[]
+          required_capabilities: string[]
+          time_budget: number
+          cost_budget: number
+      }
+  }
+
+  SubQuestion {
+      id: string
+      content: string
+      parent_id: string | null
+      dependencies: string[]  // IDs of sub-questions that must complete first
+      assigned_agent: AgentType
+      status: pending | in_progress | completed | failed
+      result: AgentOutput | null
+  }
+
+  AgentOutput {
+      agent_id: string
+      agent_type: AgentType
+      content: string
+      confidence: number (0-1)
+      sources: Source[]
+      tool_calls: ToolCall[]
+      tokens_used: number
+      duration_ms: number
+  }
+
+  WorkflowPattern {
+      type: sequential | parallel | iterative | hierarchical | adaptive
+      stages: Stage[]
+      transitions: Transition[]
+  }
+
+  ---
+  5. Orchestrator Decision Flow
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                    ORCHESTRATOR DECISION ALGORITHM                           │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  INPUT: user_question
+
+  1. ANALYZE QUESTION
+     ├─ Call classification model:
+     │   complexity = assess_complexity(question)      // 1-10
+     │   domains = classify_domains(question)          // [tech, science, ...]
+     │   q_type = classify_type(question)              // factual|analytical|creative
+     │   capabilities = identify_capabilities(question) // [research, code, math, ...]
+     │
+     └─ If complexity < 3:
+         → Route directly to single agent, skip orchestration
+
+  2. DECOMPOSE (if complexity >= 5)
+     ├─ sub_questions = planner_agent.decompose(question)
+     ├─ dependency_graph = build_dependency_graph(sub_questions)
+     └─ For each sub_question:
+         └─ Repeat step 1 recursively
+
+  3. SELECT WORKFLOW PATTERN
+     ├─ If all sub_questions independent:
+     │   → pattern = PARALLEL
+     ├─ If strict dependencies exist:
+     │   → pattern = SEQUENTIAL or HIERARCHICAL
+     ├─ If high accuracy required:
+     │   → pattern = ITERATIVE (add Critic loops)
+     └─ If unknown/dynamic:
+         → pattern = ADAPTIVE
+
+  4. ASSIGN AGENTS
+     ├─ For each sub_question:
+     │   ├─ Match required capabilities to agent pool
+     │   ├─ Select best-fit agent
+     │   └─ Assign tools based on domain
+     └─ Add Synthesizer if parallel pattern
+
+  5. EXECUTE WITH MONITORING
+     ├─ Launch agents according to pattern
+     ├─ Monitor: confidence scores, failures, timeouts
+     ├─ If agent fails or low confidence:
+     │   ├─ Retry with different agent
+     │   ├─ Spawn Critic for validation
+     │   └─ Or decompose further
+     └─ Collect all AgentOutputs
+
+  6. SYNTHESIZE
+     ├─ If single agent: output directly
+     ├─ If multiple agents:
+     │   └─ synthesizer_agent.combine(all_outputs)
+     └─ writer_agent.format(final_content)
+
+  OUTPUT: Comprehensive answer with confidence & sources
+
+  ---
+  6. Tool Ecosystem
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                         TOOL CATEGORIES                                      │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  RESEARCH TOOLS
+  ├─ web_search(query) → Search results with snippets
+  ├─ academic_search(query) → Papers, citations
+  ├─ news_search(query, date_range) → Recent events
+  └─ wikipedia_lookup(topic) → Structured knowledge
+
+  CODE TOOLS  
+  ├─ github_search(query, language) → Code examples
+  ├─ code_execute(code, language) → Run and get output
+  ├─ static_analysis(code) → Quality/security analysis
+  └─ documentation_lookup(library) → API docs
+
+  DATA TOOLS
+  ├─ calculator(expression) → Math computation
+  ├─ data_analysis(data, query) → Statistical analysis
+  ├─ chart_generate(data, type) → Visualizations
+  └─ database_query(connection, sql) → Structured data
+
+  DOCUMENT TOOLS
+  ├─ pdf_extract(url) → Parsed content
+  ├─ webpage_scrape(url) → Clean text extraction
+  ├─ file_read(path) → Local file content
+  └─ summarize(text, length) → Condensed version
+
+  DOMAIN-SPECIFIC (Extensible)
+  ├─ legal_lookup(query) → Case law, regulations
+  ├─ medical_lookup(query) → Clinical information
+  ├─ financial_data(ticker, metric) → Market data
+  └─ [custom_tool](params) → User-defined tools
+
+  ---
+  7. Memory Architecture
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                         MEMORY LAYERS                                        │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  LAYER 1: Working Memory (Per-Agent)
+  ├─ Current task context
+  ├─ Immediate tool results
+  ├─ Short-term reasoning chain
+  └─ Cleared after task completion
+
+  LAYER 2: Shared Context (Per-Investigation)
+  ├─ All agent outputs (accumulated)
+  ├─ Sub-question results
+  ├─ Cross-references between findings
+  └─ Persists throughout investigation
+
+  LAYER 3: Long-Term Memory (Optional)
+  ├─ Previous investigation summaries
+  ├─ User preferences
+  ├─ Domain knowledge cache
+  └─ Persists across sessions
+
+  DATA FLOW BETWEEN MEMORY LAYERS:
+  ┌──────────────┐    Task Result    ┌──────────────────┐
+  │Working Memory│ ───────────────▶ │  Shared Context  │
+  └──────────────┘                   └──────────────────┘
+                                             │
+                                     Summary │
+                                             ▼
+                                     ┌──────────────────┐
+                                     │ Long-Term Memory │
+                                     └──────────────────┘
+
+  ---
+  8. Example Execution Traces
+
+  Example 1: Simple Factual Question
+  Q: "What is the capital of France?"
+
+  Orchestrator Analysis:
+    complexity: 1
+    domain: geography
+    type: factual
+
+  Decision: Skip orchestration, direct answer
+  Workflow: None (single LLM call)
+  Result: "Paris"
+
+  Example 2: Technical Multi-Part Question
+  Q: "Compare React vs Vue for a large enterprise app,
+      considering performance, ecosystem, and hiring"
+
+  Orchestrator Analysis:
+    complexity: 7
+    domains: [software, business]
+    type: analytical, comparative
+    capabilities: [research, technical_analysis]
+
+  Decomposition:
+    SubQ1: "React performance characteristics for enterprise"
+    SubQ2: "Vue performance characteristics for enterprise"  
+    SubQ3: "React ecosystem and community size"
+    SubQ4: "Vue ecosystem and community size"
+    SubQ5: "Developer job market for React vs Vue"
+
+  Workflow: PARALLEL (SubQ1-5) → SYNTHESIZER
+
+  Execution:
+    [Researcher] ──┬── SubQ1 result ──┐
+    [Researcher] ──┼── SubQ2 result ──┤
+    [Researcher] ──┼── SubQ3 result ──┼──▶ [Synthesizer] ──▶ [Writer]
+    [Researcher] ──┼── SubQ4 result ──┤
+    [Researcher] ──┴── SubQ5 result ──┘
+
+  Result: Comprehensive comparison with recommendation
+
+  Example 3: Complex Research Question
+  Q: "Design a microservices architecture for a
+      high-frequency trading platform with regulatory compliance"
+
+  Orchestrator Analysis:
+    complexity: 9
+    domains: [software_architecture, finance, legal]
+    type: creative, technical
+    capabilities: [research, code, domain_expertise, synthesis]
+
+  Decomposition:
+    SubQ1: "HFT system requirements and constraints"
+    SubQ2: "Microservices patterns for low-latency systems"
+    SubQ3: "Financial regulatory requirements (SEC, MiFID II)"
+    SubQ4: "Reference architectures from existing HFT systems"
+    SubQ5: "Synthesize into proposed architecture"
+
+  Workflow: HIERARCHICAL + ITERATIVE
+
+  Execution:
+    Phase 1 (Parallel Research):
+      [Researcher] → SubQ1
+      [Researcher] → SubQ2
+      [Domain Expert: Finance] → SubQ3
+      [Analyst] → SubQ4
+
+    Phase 2 (Synthesis):
+      [Architect] → SubQ5 (receives all Phase 1 outputs)
+
+    Phase 3 (Validation):
+      [Critic] → Validates architecture proposal
+      → Identifies gaps in compliance coverage
+      → Routes back to Domain Expert for clarification
+
+    Phase 4 (Refinement):
+      [Architect] → Updates design based on Critic feedback
+
+    Phase 5 (Final):
+      [Writer] → Comprehensive documentation
+
+  Result: Full architecture design with diagrams, component specs,
+          compliance mapping, and implementation roadmap
+
+  ---
+  Summary: Key Design Principles
+
+  | Principle              | Implementation                                                   |
+  |------------------------|------------------------------------------------------------------|
+  | Adaptive Complexity    | Orchestrator assesses question and scales response appropriately |
+  | Separation of Concerns | Each agent has single responsibility                             |
+  | Context Accumulation   | Information flows forward, never lost                            |
+  | Fail-Safe Routing      | Critic agents catch errors, retry mechanisms                     |
+  | Tool Abstraction       | Agents don't know tool details, just capabilities                |
+  | Extensibility          | New agents/tools can be added without changing core              |
+  | Observability          | Full logging of decisions, data flow, results                    |
+
+  This architecture gives you full flexibility - the system itself decides whether to use 1 agent or 10, sequential or parallel, with or without validation loops, all based on the question's actual requirements.

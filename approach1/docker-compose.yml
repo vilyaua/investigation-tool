@@ -1,0 +1,93 @@
+services:
+  # FastAPI Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: mcp-investigation-api
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+      - ./src:/app/src
+      - ./api.py:/app/api.py
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Gradio Web UI (Normal)
+  gradio:
+    build:
+      context: .
+      dockerfile: Dockerfile.gradio
+    container_name: mcp-investigation-gradio
+    ports:
+      - "7860:7860"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+      - ./src:/app/src
+      - ./app.py:/app/app.py
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # Gradio Web UI (Enhanced)
+  gradio-enhanced:
+    build:
+      context: .
+      dockerfile: Dockerfile.gradio
+    container_name: mcp-investigation-gradio-enhanced
+    ports:
+      - "7861:7860"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./src:/app/src
+      - ./app_enhanced.py:/app/app.py
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # Lovable Frontend (uncomment after adding Lovable code)
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: mcp-investigation-frontend
+  #   ports:
+  #     - "5173:5173"
+  #   environment:
+  #     - VITE_API_URL=http://localhost:8000
+  #   volumes:
+  #     - ./frontend/src:/app/src
+  #     - ./frontend/public:/app/public
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - api
+
+volumes:
+  outputs:
+    driver: local
+
+networks:
+  default:
+    name: mcp-investigation-network

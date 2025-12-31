@@ -1,0 +1,62 @@
+MCP Investigation Tool:
+
+  Architecture Overview
+
+  The system uses CrewAI framework with 4 specialized agents operating in a sequential pipeline:
+
+  ┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐
+  │  MCP Researcher    │────▶│  Technical Analyst │────▶│  System Architect  │────▶│  Technical Writer  │
+  │  (gpt-5.2-instant) │     │  (gpt-5.2-instant) │     │  (gpt-5.2-thinking)│     │  (gpt-5.2-thinking)│
+  │  Tools: web_search │     │  Tools: github_*   │     │  Tools: none       │     │  Tools: none       │
+  └────────────────────┘     └────────────────────┘     └────────────────────┘     └────────────────────┘
+           │                          │                          │                          │
+           ▼                          ▼                          ▼                          ▼
+     Research Report            Technical Analysis        Architecture Design         Final Report
+
+  Data Flow Mechanism
+
+  The key mechanism is context passing via CrewAI's task context feature in src/crew.py:
+
+  | Phase | Agent             | Input Context           | Output              |
+  |-------|-------------------|-------------------------|---------------------|
+  | 1     | MCP Researcher    | User topic              | Research report     |
+  | 2     | Technical Analyst | Task 1 output           | Technical analysis  |
+  | 3     | System Architect  | Tasks 1 + 2 outputs     | Architecture design |
+  | 4     | Technical Writer  | Tasks 1 + 2 + 3 outputs | Final documentation |
+
+  How Context Accumulates
+
+  # src/crew.py (investigate method)
+  task1 = create_mcp_research_task(researcher, topic)
+  task2 = create_technical_analysis_task(analyst, topic, context=[task1])
+  task3 = create_architecture_design_task(architect, topic, context=[task1, task2])
+  task4 = create_documentation_task(writer, topic, context=[task1, task2, task3])
+
+  Each subsequent task receives the complete outputs of all previous tasks as context, creating a knowledge pyramid:
+
+  Phase 4: [Research] + [Analysis] + [Architecture] → Final Report
+  Phase 3: [Research] + [Analysis] → Architecture Design
+  Phase 2: [Research] → Technical Analysis
+  Phase 1: [Topic] → Research Report
+
+  Tool Integration
+
+  - Phase 1 - web_search_tool (src/tools/web_search.py): Queries Serper API (or DuckDuckGo fallback) for MCP protocol information
+  - Phase 2 - github_code_search + github_repo_search (src/tools/github_search.py): Fetches real code examples and popular repositories
+
+  Phases 3-4 use no external tools - they perform pure synthesis/reasoning on accumulated data.
+
+  Execution Model
+
+  The crew runs with Process.sequential in src/crew.py:118-128:
+  - Each task must complete fully before the next begins
+  - The final result is the Technical Writer's output (Task 4)
+  - Output saved to outputs/investigation_{topic}_{timestamp}.md
+
+  Session Logging
+
+  All data flow is tracked via SessionLogger (src/utils/logging_config.py):
+  - Agent prompts and outputs
+  - Tool queries and results
+  - Stage transitions with data sizes
+  - Complete audit trail in JSON format

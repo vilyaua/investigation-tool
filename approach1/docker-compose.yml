@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # FastAPI Backend
   api:
@@ -26,7 +24,7 @@ services:
       retries: 3
       start_period: 5s
 
-  # Gradio Web UI
+  # Gradio Web UI (Normal)
   gradio:
     build:
       context: .
@@ -43,6 +41,28 @@ services:
       - ./outputs:/app/outputs
       - ./src:/app/src
       - ./app.py:/app/app.py
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # Gradio Web UI (Enhanced)
+  gradio-enhanced:
+    build:
+      context: .
+      dockerfile: Dockerfile.gradio
+    container_name: mcp-investigation-gradio-enhanced
+    ports:
+      - "7861:7860"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./src:/app/src
+      - ./app_enhanced.py:/app/app.py
     restart: unless-stopped
     depends_on:
       - api

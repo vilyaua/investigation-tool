@@ -29,15 +29,17 @@ class MCPInvestigationCrew:
     MCP tool architectures and produce comprehensive documentation.
     """
 
-    def __init__(self, verbose: bool = VERBOSE):
+    def __init__(self, verbose: bool = VERBOSE, session_logger=None):
         """
         Initialize the investigation crew.
 
         Args:
             verbose: Enable verbose logging
+            session_logger: Optional SessionLogger instance for detailed logging
         """
         self.verbose = verbose
         self.console = Console()
+        self.session_logger = session_logger
 
         # Create agents
         self.mcp_researcher = create_mcp_researcher()
@@ -69,21 +71,48 @@ class MCPInvestigationCrew:
 
         # Create tasks
         task1 = create_mcp_research_task(self.mcp_researcher, topic)
+        if self.session_logger:
+            self.session_logger.log_agent_prompt(
+                "MCP Researcher",
+                task1.description,
+                {"task_id": "task1", "expected_output": task1.expected_output}
+            )
+
         task2 = create_technical_analysis_task(
             self.tech_analyst,
             topic,
             context=[task1]
         )
+        if self.session_logger:
+            self.session_logger.log_agent_prompt(
+                "Technical Analyst",
+                task2.description,
+                {"task_id": "task2", "expected_output": task2.expected_output}
+            )
+
         task3 = create_architecture_design_task(
             self.architect,
             topic,
             context=[task1, task2]
         )
+        if self.session_logger:
+            self.session_logger.log_agent_prompt(
+                "System Architect",
+                task3.description,
+                {"task_id": "task3", "expected_output": task3.expected_output}
+            )
+
         task4 = create_documentation_task(
             self.writer,
             topic,
             context=[task1, task2, task3]
         )
+        if self.session_logger:
+            self.session_logger.log_agent_prompt(
+                "Technical Writer",
+                task4.description,
+                {"task_id": "task4", "expected_output": task4.expected_output}
+            )
 
         # Create crew
         crew = Crew(
@@ -103,6 +132,26 @@ class MCPInvestigationCrew:
 
         try:
             result = crew.kickoff()
+
+            # Log task outputs if session logger is available
+            if self.session_logger:
+                # Log each task's output
+                for i, task in enumerate([task1, task2, task3, task4], 1):
+                    agent_names = ["MCP Researcher", "Technical Analyst", "System Architect", "Technical Writer"]
+                    if hasattr(task, 'output') and task.output:
+                        self.session_logger.log_agent_output(
+                            agent_names[i-1],
+                            str(task.output),
+                            {"task_id": f"task{i}", "task_name": task.description[:100]}
+                        )
+
+                        # Log stage transitions
+                        if i < 4:
+                            self.session_logger.log_stage_transition(
+                                from_stage=agent_names[i-1],
+                                to_stage=agent_names[i],
+                                data_passed=str(task.output)[:500]
+                            )
 
             # Save output
             output_file = self._save_result(topic, result)

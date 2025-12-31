@@ -1,5 +1,5 @@
-# Core framework (compatible with Python 3.13)
-crewai==0.11.2
+# Core framework
+crewai==1.7.2
 
 # Utilities
 python-dotenv>=1.0.0
@@ -12,6 +12,7 @@ requests>=2.31.0
 
 # Web UI
 gradio>=4.0.0
+markdown>=3.0.0
 
 # REST API (for Lovable integration)
 fastapi>=0.104.0

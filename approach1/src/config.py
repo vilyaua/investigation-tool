@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     serper_api_key: Optional[str] = None
 
     # Model Configuration
-    default_research_model: str = "gpt-4o-mini"
-    default_analysis_model: str = "gpt-4o"
+    # Using latest GPT-5.2 models (Dec 2025)
+    default_research_model: str = "gpt-5.2-instant"  # Fast for research/search tasks
+    default_analysis_model: str = "gpt-5.2-thinking"  # Reasoning for architecture/writing
 
     # Output Settings
     output_dir: Path = Path("outputs")
